@@ -5,8 +5,8 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 @TeleOp
 public class OdometrySensorTest extends LinearOpMode
@@ -37,38 +37,56 @@ public class OdometrySensorTest extends LinearOpMode
         FtcDashboard dashboard = FtcDashboard.getInstance();
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
 
-        motorFL = hardwareMap.get(DcMotorEx.class, "left_Front");
-        motorFR = hardwareMap.get(DcMotorEx.class, "right_Front");
-        motorBL = hardwareMap.get(DcMotorEx.class, "left_Back");
-        motorBR = hardwareMap.get(DcMotorEx.class, "right_Back");
+        motorFL = hardwareMap.get(DcMotorEx.class, "frontLeft");
+        motorFR = hardwareMap.get(DcMotorEx.class, "frontRight");
+        motorBL = hardwareMap.get(DcMotorEx.class, "backLeft");
+        motorBR = hardwareMap.get(DcMotorEx.class, "backRight");
 
-        motorFL.setDirection(DcMotorSimple.Direction.REVERSE);
-        motorFR.setDirection(DcMotorSimple.Direction.FORWARD);
-        motorBL.setDirection(DcMotorSimple.Direction.REVERSE);
-        motorBR.setDirection(DcMotorSimple.Direction.FORWARD);
+        motorFL.setDirection(DcMotorEx.Direction.REVERSE);
+        motorFR.setDirection(DcMotorEx.Direction.FORWARD);
+        motorBL.setDirection(DcMotorEx.Direction.REVERSE);
+        motorBR.setDirection(DcMotorEx.Direction.FORWARD);
 
-//        motorFL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-//        motorFR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-//        motorBL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-//        motorBR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        motorFL.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        motorFR.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        motorBL.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        motorBR.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        motorFL.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        motorFR.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        motorBL.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        motorBR.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+
+        motorFL.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        motorFR.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        motorBL.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        motorBR.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
 
         myOdometrySensor = hardwareMap.get(SparkFunOTOS.class, "sfe_otos");
-        SparkFunOTOS.otos_pose2d_t offsetPose = myOdometrySensor.new otos_pose2d_t(3.7, -.55, 0);
+        SparkFunOTOS.otos_pose2d_t offsetPose = myOdometrySensor.new otos_pose2d_t(-6, 0, 90);
         myOdometrySensor.setOffset(offsetPose);
-        myOdometrySensor.setAngularScalar(0.993);
+        myOdometrySensor.setLinearScalar(1.0);
+        myOdometrySensor.setAngularScalar(1.0);
+
+        // Calibrate IMU. Must be stationary and flat during this time! By default, this will take
+        // about 612ms, but can be made faster by taking fewer samples
+        myOdometrySensor.calibrateImu();
+
+        // Reset tracking algorithm on OTOS
+        myOdometrySensor.resetTracking();
+
 
         waitForStart();
 
         while (opModeIsActive())
         {
             double forward = -gamepad1.left_stick_y;
-            double sideways = gamepad1.left_stick_x;
-            double turn = -gamepad1.right_stick_x;
+            double sidewaysRight = gamepad1.left_stick_x;
+            double turnCCW = -gamepad1.right_stick_x;
 
-            double powerFL = forward + sideways - turn;
-            double powerFR = forward - sideways + turn;
-            double powerBL = forward - sideways - turn;
-            double powerBR = forward + sideways + turn;
+            double powerFL = forward + sidewaysRight - turnCCW;
+            double powerFR = forward - sidewaysRight + turnCCW;
+            double powerBL = forward - sidewaysRight - turnCCW;
+            double powerBR = forward + sidewaysRight + turnCCW;
 
             if (gamepad1.left_bumper)
             {
